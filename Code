@@ -1,0 +1,90 @@
+#importing libraries
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+
+class LogitRegression() :
+    def __init__(self, learning_rate, iterations) :        
+        self.learning_rate = learning_rate        
+        self.iterations = iterations
+          
+      
+    def fit(self, X, Y):          # Function for model training                 
+        self.X = X        
+        self.Y = Y   
+        self.m, self.n = X.shape     # no_of_training_examples, no_of_features         
+        
+        self.W = np.zeros(self.n)  # weight initialization    
+        self.b = 0                                                            
+        
+        for i in range(self.iterations):   # gradient descent learning         
+            self.update_weights()            
+        return self
+      
+      
+    def update_weights(self):   
+        A = 1 / (1 + np.exp(-(self.X.dot(self.W) + self.b))) #sigmoid function
+        
+        # calculate gradients        
+        tmp = (A - self.Y.T)                # y pred - y
+        tmp = np.reshape(tmp, self.m)       # reshaping tmp
+        dW = np.dot(self.X.T, tmp)/self.m   # partial derivativ of W   
+        db = np.sum(tmp)/self.m             # partial derivativ of b   
+          
+        # update weights
+
+        # w = w - learningrate * partial derivative of w    
+        self.W = self.W - self.learning_rate * dW   
+
+        # b = b - learningrate * partial derivative of b  
+        self.b = self.b - self.learning_rate * db     
+        return self
+
+    def predict(self, X) :    
+        Z = 1 / (1 + np.exp(-(X.dot(self.W) + self.b)))        
+        Y = np.where(Z > 0.5, 1, 0)        
+        return Y
+  
+
+def main() :
+      
+    # Importing dataset    
+    df = pd.read_csv( "/content/heart_disease.csv" )
+    X = df.iloc[:,:-1].values
+    Y = df.iloc[:,-1:].values
+      
+    # Splitting dataset into train and test set
+    X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0.15, random_state = 0)
+    
+    # Model training    
+    model = LogitRegression(learning_rate = 0.1, iterations = 500000)
+    model.fit(X_train, Y_train)   
+      
+    # Prediction on test set
+    Y_pred = model.predict(X_test)   
+      
+    # measuring performance    
+    correctly_classified = 0   
+    mis_classified = 0
+    count = 0    
+    for count in range(np.size(Y_pred)):
+         
+      if Y_test[count] == Y_pred[count]:            
+            correctly_classified = correctly_classified + 1
+        
+      elif Y_test[count] != Y_pred[count]:            
+            mis_classified = mis_classified + 1              
+      count = count + 1
+
+      cf_matrix = confusion_matrix(Y_test, Y_pred)       
+
+    print(f"Predicted values (Y): {list(Y_pred)}")
+    print(f"Correct classifications: {correctly_classified}")
+    print(f"Misclassified: {mis_classified}") 
+    print(f"Accuracy on test set by our model: {round(((correctly_classified/count) * 100),2)}")
+    print(f"Confusion matrix: ")
+    sns.heatmap(cf_matrix, annot=True)
+
+main()
